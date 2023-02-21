@@ -84,8 +84,9 @@ import {
 import {PolkadotJs} from './utils/polkadot-js';
 import {getFilePathFromSeedData, upload} from './utils/upload';
 import fs, {existsSync} from 'fs';
-import {FriendStatusType} from './enums';
+import {FriendStatusType, VisibilityType} from './enums';
 import {UpdatePeopleProfileJob} from './jobs';
+import {Experience} from './models';
 
 const jwt = require('jsonwebtoken');
 
@@ -238,9 +239,10 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   async migrateSchema(options?: SchemaMigrationOptions): Promise<void> {
+    const env = this.options?.environment;
     if (!this.options?.skipMigrateSchema) await super.migrateSchema(options);
-    if (options?.existingSchema === 'drop')
-      return this.databaseSeeding(this.options?.environment);
+    if (options?.existingSchema === 'drop') return this.databaseSeeding(env);
+    await Promise.all([]);
   }
 
   async databaseSeeding(environment: string): Promise<void> {
@@ -498,6 +500,53 @@ export class MyriadApiApplication extends BootMixin(
 
     bar.update(barSize);
     bar.stop();
+  }
+
+  async doCreateTimeline(environment: string) {
+    if (!this.doCollectionExists('timeline')) return;
+
+    const directory = path.join(__dirname, `../seed-data/${environment}`);
+
+    if (!existsSync(directory)) return;
+
+    const {experienceRepository, userRepository} = await this.repositories();
+
+    const bar = this.initializeProgressBar('Start Seeding');
+    const files = fs.readdirSync(directory);
+    const barSize = files.length + 1;
+
+    bar.start(barSize, 0);
+    for (const [index, file] of files.entries()) {
+      const dataDirectory = path.join(directory, file);
+      const stringifyJSON = fs.readFileSync(dataDirectory, 'utf-8');
+      const data = JSON.parse(stringifyJSON);
+
+      let experiences: Experience[] = [];
+
+      switch (file) {
+        case 'timeline.json': {
+          experiences = await experienceRepository.createAll(data);
+          break;
+        }
+
+        case 'user.json': {
+          if (experiences.length === 0) return;
+          const users = await userRepository.createAll(data);
+          const userIds = users.map(user => user.id);
+
+          for (const experience of experiences) {
+            await experienceRepository.updateById(experience.id, {
+              visibility: VisibilityType.SELECTED,
+              selectedUserIds: userIds,
+            });
+          }
+
+          break;
+        }
+      }
+
+      bar.update(index);
+    }
   }
 
   async repositories(): Promise<Repositories> {
