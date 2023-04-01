@@ -17,6 +17,8 @@ export interface AddedAt {
   [key: string]: number;
 }
 
+// timelineId: Date (ms)\\\
+
 @model({
   settings: {
     strictObjectIDCoercion: true,
@@ -159,7 +161,7 @@ export class Post extends ImportedPost {
     required: false,
     default: () => new Date(),
   })
-  originCreatedAt?: string;
+  originCreatedAt: string;
 
   @property({
     type: 'object',
@@ -173,14 +175,14 @@ export class Post extends ImportedPost {
     required: false,
     default: () => new Date(),
   })
-  createdAt?: string;
+  createdAt: string;
 
   @property({
     type: 'date',
     required: false,
     default: () => new Date(),
   })
-  updatedAt?: string;
+  updatedAt: string;
 
   @property({
     type: 'date',

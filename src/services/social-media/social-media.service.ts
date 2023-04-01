@@ -42,7 +42,6 @@ export class SocialMediaService {
     const {
       id_str: idStr,
       full_text: fullText,
-      created_at: createdAt,
       user,
       entities,
       extended_entities: extendedEntities,
@@ -158,7 +157,6 @@ export class SocialMediaService {
       text: text.trim(),
       rawText: formatRawText(text),
       tags: twitterTags.filter((tag: string) => Boolean(tag)),
-      originCreatedAt: new Date(createdAt).toString(),
       asset: asset,
       embeddedURL: embedded,
       url: `https://twitter.com/${user.id_str}/status/${textId}`,
@@ -366,7 +364,6 @@ export class SocialMediaService {
     return {
       platform: PlatformType.REDDIT,
       originPostId: textId,
-      originCreatedAt: new Date(redditPost.created_utc * 1000).toString(),
       title: redditPost.title,
       text: redditText.trim(),
       rawText: rawText.trim(),
